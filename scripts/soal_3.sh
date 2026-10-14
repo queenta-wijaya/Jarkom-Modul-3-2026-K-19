@@ -21,8 +21,5 @@ service isc-dhcp-relay restart || /etc/init.d/isc-dhcp-relay restart
 # 1. Set DNS sementara (ke NAT1 / Google)
 echo "nameserver 192.168.122.1" > /etc/resolv.conf
 
-# 2. Coba update & install ulang
-apt-get update && apt-get install -y isc-dhcp-client ifupdown
-
 # 3. Testing
-dhclient -v eth0
+udhcpc -i eth0
