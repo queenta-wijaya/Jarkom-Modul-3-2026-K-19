@@ -978,7 +978,7 @@ dig @10.73.1.3 jujutsu.com SOA
 
 ![Query SOA ke DNS Master dan Slave](./assets/soal_11-5.png)
 
-(./assets/soal_11-4.png)
+![mg](./assets/soal_11-4.png)
 
 ## Soal 12 — Record A, CNAME, dan Reverse DNS (PTR) pada DNS Master-Slave
 
