@@ -21,6 +21,10 @@ SOCK=$(ls /run/php/php*-fpm.sock | head -1)
 # 3. Tes koneksi ke Yaga
 mysql -h 10.73.4.9 -u admin_net4 -ppassword123 -e "SELECT 1;" || { echo "GAGAL: tidak bisa login ke Yaga"; exit 1; }
 
+#Nanami & Todo (pastikan hidup lagi setelah soal 18)
+#!/bin/sh
+service nginx start
+
 # 4. API sama dengan Nanami/Todo (versi soal 17, ada client_ip)
 mkdir -p /var/www/api
 cat << 'ENDPHP' > /var/www/api/index.php
