@@ -2131,3 +2131,46 @@ grep "limiting requests" /var/log/nginx/error.log | tail -5
 ```
 
 ![Error log Gojo mencatat limiting requests pada zona api_limit dari klien 10.73.2.2](./assets/soal_19-5.png)
+
+## Soal 20 — Benchmark layanan dengan Apache Benchmark dari Kusakabe
+
+Kusakabe (Network 3) menguji kapasitas Gojo menggunakan Apache Benchmark dengan parameter `-n 600 -c 30`, artinya 600 request total dengan 30 koneksi bersamaan. Pengujian pertama menuju halaman web `http://jujutsu.com/` sebagai baseline, yang dilayani dari proxy cache Gojo tanpa rate limit: seluruh 600 request berhasil tanpa kegagalan dengan 7123,27 RPS dan latensi rata-rata 4,212 ms. Pengujian kedua menuju `http://jujutsu.com/api` dengan rate limiting 10 request per detik per IP aktif: hanya 1 dari 600 request berhasil, sedangkan 599 request ditolak (`Non-2xx`) dengan 6525,92 RPS dan latensi rata-rata 4,597 ms. Rincian kegagalannya adalah `Connect: 0`, `Receive: 0`, `Exceptions: 0`, dan `Length: 599`, sehingga tidak ada kegagalan koneksi. Angka `Length` muncul karena body penolakan dari Nginx berbeda panjang dengan respons JSON API, dan penolakan ini sesuai dengan perilaku rate limit pada soal 19 (status 429). RPS pada `/api` mencerminkan kecepatan penolakan, bukan throughput sukses.
+
+Karena AlpiNet tidak mendapat IP lewat DHCP, Kusakabe diberi IP statis `10.73.3.2/24` dengan gateway `10.73.3.1`, lalu dipasang paket `apache2-utils`.
+
+**Kusakabe — siapkan IP, internet, dan Apache Benchmark**
+
+```bash
+ip link set eth0 up
+ip addr add 10.73.3.2/24 dev eth0 2>/dev/null
+ip route replace default via 10.73.3.1
+echo "nameserver 8.8.8.8" > /etc/resolv.conf
+ping -c 2 10.73.3.1
+ping -c 2 8.8.8.8
+
+apk add --no-cache apache2-utils curl
+
+echo "nameserver 10.73.1.2" > /etc/resolv.conf
+ab -V | head -2
+curl -s -o /dev/null -w "cek web: HTTP %{http_code}\n" http://jujutsu.com/
+```
+
+![Kusakabe memiliki IP 10.73.3.2, internet aktif, Apache Benchmark 2.3 terpasang, dan web dapat diakses (HTTP 200)](./assets/soal_20-1.png)
+
+**Kusakabe — benchmark baseline halaman web (cache aktif, tanpa rate limit)**
+
+```bash
+ab -n 600 -c 30 http://jujutsu.com/ > ab_baseline.txt
+grep -E "Complete requests|Failed requests|Length:|Exceptions:|Non-2xx|Requests per second|Time per request|Connect:|Processing:|Total:" ab_baseline.txt
+```
+
+![Hasil benchmark baseline web: 600 request, 0 gagal, 7123,27 RPS](./assets/soal_20-2.png)
+
+**Kusakabe — benchmark endpoint /api (rate limiting aktif)**
+
+```bash
+ab -n 600 -c 30 http://jujutsu.com/api > ab_api_limit.txt
+grep -E "Complete requests|Failed requests|Length:|Exceptions:|Non-2xx|Requests per second|Time per request|Connect:|Processing:|Total:" ab_api_limit.txt
+```
+
+![Hasil benchmark /api dengan rate limit: 599 dari 600 request ditolak (Non-2xx), 6525,92 RPS](./assets/soal_20-3.png)
